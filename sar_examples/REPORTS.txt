@@ -1,0 +1,23 @@
+Sample SAR reports used for development and testing
+---------------------------------------------------
+
+NOTE: When you add a SAR example to this directory please add a
+description of what the report is demonstrating. 
+
+NOTE: When adding SAR examples always change the real hostname in the
+report to node1.example.com. This change must be made before uploading
+any real world report examples to GITHUB.
+
+Report inventory:
+---------------- 
+sar-rhel5.example.com.txt: Example SAR report from a Red Hat 5 server.
+
+sar-rhel6.example.com.txt: Example SAR report from a Red Hat 6 server.
+
+sar-rhel7.example.com.txt: Example SAR report from a Red Hat 7 server.
+
+sar-node1.example.com-cpu_steal_spike.txt: This is an example of SAR
+report captured from a Linux system where the VM hypervisor for the VM
+CPU into a long wait state resulting in an incomplete SAR report and
+no system logging. 
+
