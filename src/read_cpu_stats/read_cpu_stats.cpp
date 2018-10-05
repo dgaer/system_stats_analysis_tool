@@ -6,7 +6,7 @@
 // C++ Compiler Used: GNU
 // Produced By: Douglas.Gaer@noaa.gov
 // File Creation Date: 10/01/2018
-// Date Last Modified: 10/04/2018
+// Date Last Modified: 10/05/2018
 // ----------------------------------------------------------- // 
 // ------------- Program Description and Details ------------- // 
 // ----------------------------------------------------------- // 
@@ -36,18 +36,21 @@ using namespace std; // Use unqualified names for Standard C++ library
 #include "m_log.h"
 
 struct CPU_stats {
-  gxString date_time;
+  gxString hour, minute, second, AMPM;
+  gxString year, month, day;
   gxString cpu_number;
-  gxString user;
-  gxString nice;
-  gxString system;
-  gxString iowait;
-  gxString steal;
-  gxString irq;
-  gxString soft;
-  gxString guest;
-  gxString gnice;
-  gxString idle;
+  gxString user;   // Time that the processor is spending on user processes including time running virtual processors 
+  gxString usr;    // Time that the processor is spending on user processes excluding time running virtual processors 
+  gxString nice;   // Time spend by CPU for process whose nice value has been changed but a user
+  gxString sys;    // Time spend by the processor for operating system tasks excluding hardware and software irqs
+  gxString system; // Time spend by the processor for operating system tasks including hardware and software irqs
+  gxString iowait; // CPU idle time during which the system had an outstanding disk I/O request
+  gxString steal;  // Time spent in involuntary wait by virtual CPU while hypervisor servicing other VMs 
+  gxString irq;    // Time spent by the CPU to service hardware interrupts
+  gxString soft;   // Time spent by the CPU to service software interrupts
+  gxString guest;  // Time spent by the CPU to run a virtual processor
+  gxString gnice;  // Time spent by the CPU to run a niced guest
+  gxString idle;   // CPU idle time where the system did not have an outstanding disk I/O request
 };
 
 // Version number and program name
@@ -129,6 +132,7 @@ int main(int argc, char **argv)
   gxString delimiter1 = " ";
   gxString delimiter2 = "\t";
   gxString date_delimiter = "-";
+  gxString time_delimiter = ":";
   unsigned num_arr = 0;
   unsigned i = 0;
   gxString os, kernel, hostname, date, arch, cpu;
@@ -139,8 +143,10 @@ int main(int argc, char **argv)
   int AMPM_pos = -1;
   int cpu_number_pos = -1;
   int user_pos = -1;
+  int usr_pos = -1;
   int nice_pos = -1;
   int system_pos = -1;
+  int sys_pos = -1;
   int iowait_pos = -1;
   int steal_pos = -1;
   int irq_pos = -1;
@@ -319,8 +325,10 @@ int main(int argc, char **argv)
 	  AMPM_pos = -1;
 	  cpu_number_pos = -1;
 	  user_pos = -1;
+	  usr_pos = -1;
 	  nice_pos = -1;
 	  system_pos = -1;
+	  sys_pos = -1;
 	  iowait_pos = -1;
 	  steal_pos = -1;
 	  irq_pos = -1;
@@ -339,9 +347,11 @@ int main(int argc, char **argv)
 	    if(i == 0) time = cpu_header[0];
 	    if(cpu_header[i] == "AM" || cpu_header[i] == "PM") AMPM_pos = i;
 	    if(cpu_header[i] == "CPU") cpu_number_pos = i;
-	    if(cpu_header[i] == "user" || cpu_header[i] == "usr") { user_pos = i; num_cpu_fields_found++; }
+	    if(cpu_header[i] == "user") {  user_pos = i; num_cpu_fields_found++; }
+	    if(cpu_header[i] == "usr") { usr_pos = i; num_cpu_fields_found++; }
 	    if(cpu_header[i] == "nice") { nice_pos = i; num_cpu_fields_found++; }
-	    if(cpu_header[i] == "system" || cpu_header[i] == "sys") { system_pos = i; num_cpu_fields_found++; }
+	    if(cpu_header[i] == "system") { system_pos = i; num_cpu_fields_found++; }
+	    if(cpu_header[i] == "sys") { sys_pos = i; num_cpu_fields_found++; }
 	    if(cpu_header[i] == "iowait") { iowait_pos = i; num_cpu_fields_found++; }
 	    if(cpu_header[i] == "steal") { steal_pos = i; num_cpu_fields_found++; }
 	    if(cpu_header[i] == "irq") { irq_pos = i; num_cpu_fields_found++; }
@@ -403,14 +413,30 @@ int main(int argc, char **argv)
 	      continue;  
 	    }
 
-	    cout << "time = " << cpu_line[0].c_str();
-	    if(AMPM_pos > 0) cout << cpu_line[AMPM_pos].c_str() << "\n";
-	    cout << "\n";
+	    num_arr = 0;
+	    time_vals = 0;
+	    time_vals =  ParseStrings(cpu_line[0], time_delimiter, num_arr);
+	    if(num_arr != 3) { 
+	      ConsoleWriteLines("ERROR - Bad time value", date.c_str());
+	      error_level = 1;
+	      if(time_vals) { delete[] time_vals; time_vals = 0; }
+	      break;
+	    }
+	    hour = time_vals[0];
+	    minute = time_vals[1];
+	    second = time_vals[2];
+	    delete[] time_vals; time_vals = 0;
+
+	    sbuf << clear << month << "/" << day << "/" << year << " " << hour << ":" << minute << ":" << second;
+	    if(AMPM_pos > 0) sbuf << " " << cpu_line[AMPM_pos].c_str();
+	    cout << "time = " << sbuf.c_str() << "\n";
 
 	    if(cpu_number_pos > 0) cout << "cpu_number = " << cpu_line[cpu_number_pos].c_str() << "\n";
 	    if(user_pos > 0) cout << "user = " << cpu_line[user_pos].c_str() << "\n";
+	    if(usr_pos > 0) cout << "usr = " << cpu_line[usr_pos].c_str() << "\n";
 	    if(nice_pos > 0) cout << "nice = " << cpu_line[nice_pos].c_str() << "\n";
 	    if(system_pos > 0) cout << "system = " << cpu_line[system_pos].c_str() << "\n";
+	    if(sys_pos > 0) cout << "sys = " << cpu_line[sys_pos].c_str() << "\n";
 	    if(iowait_pos > 0) cout << "iowait = " << cpu_line[iowait_pos].c_str() << "\n";
 	    if(steal_pos > 0) cout << "steal = " << cpu_line[steal_pos].c_str() << "\n";
 	    if(irq_pos > 0) cout << "irq = " << cpu_line[irq_pos].c_str() << "\n";
